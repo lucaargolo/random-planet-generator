@@ -1,0 +1,144 @@
+<html>
+    <head>
+        <title>Random Planet Generator</title>
+    </head>
+    <style>
+        @import url('https://fonts.googleapis.com/css?family=Montserrat&display=swap');
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: normal;
+            font-style: normal;
+            text-align: center;
+            margin: 0px;
+            width: 100%;
+        }
+
+        h1 {
+            margin: 20px
+        }
+
+        a {
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            padding: 5px;
+            cursor: pointer;
+        }
+
+        a:hover {
+            color: black;
+            background-color: white;
+        }
+
+        div {
+            position: fixed;
+            margin: 25px;
+            left: 50%;
+            margin-left: -125px;
+            width: 250px;
+            display: flex;
+            flex-direction: column;
+        }
+    </style>
+    <body>
+        <h1 id="title">Random Planet Generator</h1>
+        <canvas id="planet" width="300" height="300"></canvas>
+        <div>
+            <a download="planet.png" id="download">Download</a>
+            </br>
+            <a id="regen">Regen</a>
+        </div>
+    </body>
+    <script src="perlin.js"></script>
+    <script>
+        function generate_planet() {
+            var land = document.getElementById("planet");
+
+            noise.seed(Math.random())
+            var bright_letters = 'ABCDEF';
+            var dark_letters = '0123456789';
+            var bright_color = '#'
+            var dark_color = '#'
+            for (var i = 0; i < 6; i++) {
+                bright_color += bright_letters[Math.floor(Math.random() * 6)];
+                dark_color += dark_letters[Math.floor(Math.random() * 10)]
+            }
+            
+            document.body.style = "background: linear-gradient(180deg, "+bright_color+" 25%, "+dark_color+" 100%)"
+
+            var land_context = land.getContext("2d");
+            land_context.clearRect(0, 0, land.width, land.height)
+            var land_image = land_context.createImageData(land.width,land.height)
+            var land_data = land_image.data;
+            for (var x = 0; x < land.width; x++) {
+                for (var y = 0; y < land.height; y++) {
+                    var cell = (x+y*land.width)*4;
+                    var d = Math.sqrt(Math.pow(x-150, 2)+Math.pow(y-150, 2))
+                    if (d < 128) {
+                        var value = Math.abs(noise.perlin2(x/80, y/80))
+                        value *= 255
+                        var bc = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(bright_color);
+                        var dc = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(dark_color);
+                    
+                        base_color = {red : parseInt(dc[1], 16), green : parseInt(dc[2], 16), blue : parseInt(dc[2], 16)}
+                        land_color = {red : parseInt(bc[1], 16), green : parseInt(bc[2], 16), blue : parseInt(bc[3], 16)}
+
+                        var alpha = 0
+                        if (value > 50) alpha = value
+
+                        nova_color = {
+                            red : (1-(alpha/255)) * base_color.red/255 + alpha/255 * land_color.red/255 ,
+                            green : (1-(alpha/255)) * base_color.green/255 + alpha/255 * land_color.green/255 ,
+                            blue : (1-(alpha/255)) * base_color.blue/255 + alpha/255 * land_color.blue/255 
+                        } 
+
+                        land_data[cell] = nova_color.red*255
+                        land_data[cell+1] = nova_color.green*255
+                        land_data[cell+2] = nova_color.blue*255
+                        land_data[cell+3] = 255
+                    }
+                }
+            }
+
+            var cx = 150
+            var cy = 150
+            var r = 153
+            var strokewidth = 25
+
+            land_context.putImageData(land_image, 0, 0)
+
+            land_context.strokeStyle= dark_color;
+            land_context.lineWidth=5;
+            land_context.shadowColor='black';
+            land_context.shadowBlur=15;
+            
+            land_context.beginPath();
+            land_context.arc(cx,cy,r-5,0,Math.PI*2);
+            land_context.clip();
+            
+            land_context.beginPath();
+            land_context.arc(cx,cy,r,0,Math.PI*2);
+            land_context.stroke();
+            
+            land_context.beginPath();
+            land_context.arc(cx,cy,r-strokewidth,0,Math.PI*2);
+            land_context.stroke();
+            land_context.shadowColor='rgba(0,0,0,0)';
+            
+            var image = land.toDataURL("image/png").replace("image/png", "image/octet-stream");
+            var download = document.getElementById("download");
+            var regen = document.getElementById("regen")
+            var title = document.getElementById("title")
+            regen.style = "background-color: "+dark_color
+            download.style = "background-color: "+dark_color
+            title.style = "color: "+dark_color
+            download.href = image
+        }        
+        
+        generate_planet()
+        var regen = document.getElementById("regen")
+        regen.addEventListener("click", generate_planet)
+
+    </script>
+</html>
